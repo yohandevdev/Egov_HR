@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="egovframework.hr.service.impl.EmpMapper">
+
+	<!-- 학력정보를 삭제한다. -->
+	<delete id="deleteEdu" parameterType="egovframework.hr.service.EduVO">
+	DELETE FROM education
+	WHERE emp_no = #{emp_no}
+	</delete>
+	<!-- 학력정보를 입력한다.  -->
+	<insert id="updateEdu" parameterType="egovframework.hr.service.EduVO">
+	INSERT INTO education
+	(edu_start, edu_end, edu_school, edu_major, edu_degree, edu_status, emp_no)
+	VALUES
+		<foreach collection="edu_list" item="list" separator=", ">
+		(#{list.edu_start}, #{list.edu_end}, #{list.edu_school}, 
+		#{list.edu_major}, #{list.edu_degree}, #{list.edu_status}, 
+		#{emp_no})
+		</foreach>
+	</insert>
+	
+	<!-- 학력정보를 조회한다. -->
+	<select id="select_edu" parameterType="egovframework.hr.service.EmpVO" resultType="egovframework.hr.service.EduVO">
+	SELECT *
+	FROM education
+	WHERE emp_no = #{emp_no}
+	ORDER BY edu_no DESC
+	</select>
+
+	<!-- 인적사항을 조회한다. -->
+	<select id="select_info" parameterType="egovframework.hr.service.EmpVO" resultType="egovframework.hr.service.EmpVO">
+	SELECT employee.*
+	FROM employee
+	LEFT OUTER JOIN emp_rank
+	ON employee.emp_rank = emp_rank.emp_rank_code
+	WHERE emp_rank.emp_rank_name = #{emp_rank}
+	AND emp_no = #{emp_no}
+	AND emp_name = #{emp_name}
+	</select>
+
+	<!-- 기본정보 리스트 검색 타입  -->
+	<sql id="searchType">
+		<if test="searchType != null">
+			<if test="searchType == 'name'.toString()">AND emp_name LIKE CONCAT('%', #{keyword} , '%')</if>
+			<if test="searchType == 'rank'.toString()">AND emp_rank.emp_rank_name LIKE CONCAT('%', #{keyword} , '%')</if>
+			<if test="searchType == 'position'.toString()">AND emp_position.emp_position_name LIKE CONCAT('%', #{keyword} , '%')</if>
+		</if>
+	</sql>
+	<!-- 인사정보 기본정보 리스트 SELECT  -->
+	<select id="select_emp_list" parameterType="egovframework.hr.service.SearchCriteria" resultType="egovframework.hr.service.EmpVO">
+	SELECT *
+	FROM	(
+		SELECT 	emp_no
+		        ,emp_name
+		        ,emp_jumin
+		        ,CASE WHEN(emp_gender='1') THEN '여자'
+		        	WHEN(emp_gender='2') THEN '남자'	END AS emp_gender
+	          ,emp_birth
+	          ,emp_calendar
+	          ,emp_phone
+	          ,emp_company_phone
+	          ,emp_company_email
+	          ,emp_personal_email
+	          ,emp_zip_code
+	          ,emp_addr1
+	          ,emp_addr2
+	          ,emp_rank.emp_rank_name AS emp_rank
+	          ,emp_position.emp_position_name AS emp_position
+	          ,emp_contract.emp_contract_name AS emp_contract
+	          ,emp_work.emp_work_name AS emp_work
+	          ,emp_period_chk
+	          ,emp_period_start
+	          ,emp_period_end
+	          ,emp_join_start
+	          ,emp_join_end
+	          ,emp_photo
+	          ,ROW_NUMBER() OVER(ORDER BY emp_no DESC) AS rnum
+		FROM employee 
+		LEFT OUTER JOIN emp_rank
+		ON employee.emp_rank = emp_rank.emp_rank_code
+		LEFT OUTER JOIN emp_position
+		ON employee.emp_position = emp_position.emp_position_code 
+		LEFT OUTER JOIN emp_contract
+		ON employee.emp_contract = emp_contract.emp_contract_code 
+		LEFT OUTER JOIN emp_work
+		ON employee.emp_work = emp_work.emp_work_code 
+		WHERE 1=1
+		<include refid="searchType" />
+			) EMP
+	WHERE rnum BETWEEN #{rowStart} AND #{rowEnd}
+	ORDER BY emp_no DESC
+	</select>
+	<!-- 인사정보 총 개수 SELECT -->
+	<select id="selectTotalCnt" parameterType="egovframework.hr.service.SearchCriteria" resultType="int">
+	SELECT COUNT(*)
+	FROM (
+		SELECT 	emp_no
+		        ,emp_name
+		        ,emp_jumin
+		        ,CASE WHEN(emp_gender='1') THEN '여자'
+		        	WHEN(emp_gender='2') THEN '남자'	END AS emp_gender
+	          ,emp_birth
+	          ,emp_calendar
+	          ,emp_phone
+	          ,emp_company_phone
+	          ,emp_company_email
+	          ,emp_personal_email
+	          ,emp_zip_code
+	          ,emp_addr1
+	          ,emp_addr2
+	          ,emp_rank.emp_rank_name AS emp_rank
+	          ,emp_position.emp_position_name AS emp_position
+	          ,emp_contract.emp_contract_name AS emp_contract
+	          ,emp_work.emp_work_name AS emp_work
+	          ,emp_period_chk
+	          ,emp_period_start
+	          ,emp_period_end
+	          ,emp_join_start
+	          ,emp_join_end
+	          ,emp_photo
+	          ,ROW_NUMBER() OVER(ORDER BY emp_no DESC) AS rnum
+		FROM employee 
+		LEFT OUTER JOIN emp_rank
+		ON employee.emp_rank = emp_rank.emp_rank_code
+		LEFT OUTER JOIN emp_position
+		ON employee.emp_position = emp_position.emp_position_code 
+		LEFT OUTER JOIN emp_contract
+		ON employee.emp_contract = emp_contract.emp_contract_code 
+		LEFT OUTER JOIN emp_work
+		ON employee.emp_work = emp_work.emp_work_code 
+		WHERE 1=1
+		<include refid="searchType" />
+		) EMP_CNT
+	</select>
+
+	<!-- 인적사항 INSERT -->
+	<insert id="insertEmp" parameterType="egovframework.hr.service.EmpVO">
+	INSERT INTO employee
+	(emp_name, emp_jumin, emp_gender, emp_birth, emp_calendar, emp_phone, emp_company_phone, emp_company_email, emp_personal_email, emp_zip_code, emp_addr1, emp_addr2, emp_rank, emp_position, emp_contract, emp_work, emp_period_chk, emp_period_start, emp_period_end, emp_join_start, emp_join_end, emp_photo)
+	VALUES(
+		#{emp_name}
+		,#{emp_jumin}
+		,#{emp_gender}
+		,#{emp_birth}
+		,#{emp_calendar}
+		,#{emp_phone}
+		,#{emp_company_phone}
+		,#{emp_company_email}
+		,#{emp_personal_email}
+		,#{emp_zip_code}
+		,#{emp_addr1}
+		,#{emp_addr2}
+		,#{emp_rank}
+		,#{emp_position}
+		,#{emp_contract}
+		,#{emp_work}
+		,#{emp_period_chk}
+		,#{emp_period_start}
+		,#{emp_period_end}
+		,#{emp_join_start}
+		,#{emp_join_end}
+		,#{emp_photo}
+	)
+	</insert>
+	
+	<!-- /* === 코드 리스트 ==== */ -->
+	<!-- 직급 코드 -->
+	<select id="select_emp_rank" resultType="egovframework.hr.service.EmpCodeVO">
+	SELECT *
+	FROM emp_rank
+	</select>
+	<!-- 직책 코드 -->
+	<select id="select_emp_position" resultType="egovframework.hr.service.EmpCodeVO">
+	SELECT *
+	FROM emp_position
+	</select>
+	<!-- 계약기준 코드 -->
+	<select id="select_emp_contract" resultType="egovframework.hr.service.EmpCodeVO">
+	SELECT *
+	FROM emp_contract
+	</select>
+	<!-- 재직구분 코드 -->
+	<select id="select_emp_work" resultType="egovframework.hr.service.EmpCodeVO">
+	SELECT *
+	FROM emp_work
+	</select>
+	
+</mapper>

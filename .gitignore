@@ -1,0 +1,11 @@
+/DATABASE
+DATABASE/
+/build
+build/
+/target
+target/
+/.settings
+.settings/
+*.classpath
+*.gitattributes
+*.project
